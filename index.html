@@ -218,7 +218,8 @@
     </div>
 
     <div class="setup-action">
-      <button class="btn btn-primary btn-lg btn-full" id="start-interview-btn">Start Practice Interview &rarr;</button>
+      <button class="btn btn-primary btn-lg btn-full" id="start-interview-btn">Start Interview &rarr;</button>
+      <p class="setup-note">Note: Interview questions are mock samples. STAR evaluation uses Google Gemini AI when configured (set GEMINI_API_KEY), with heuristic pattern matching as fallback. Camera is for live preview only — no video is stored.</p>
     </div>
   </div>
 </section>
@@ -248,6 +249,38 @@
         <div class="answer-actions">
           <button class="btn btn-ghost btn-sm" id="skip-btn">Skip Question</button>
           <button class="btn btn-primary" id="next-btn">Submit Answer &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STAR Feedback Panel (shown after answer submitted) -->
+      <div class="star-feedback-panel" id="star-feedback-panel" style="display:none;">
+        <div class="star-panel-header">
+          <h3>STAR Answer Evaluation</h3>
+          <div class="star-total">
+            <span class="star-total-score" id="star-total-score">0</span>
+            <span class="star-total-max">/100</span>
+            <span class="star-provisional" id="star-provisional" style="display:none;">Provisional</span>
+          </div>
+        </div>
+        <p class="star-panel-sub">Heuristic evaluation — not AI. Scores are based on pattern matching in your answer text.</p>
+        <div class="star-breakdown" id="star-breakdown"></div>
+        <div class="star-tip-box">
+          <strong>Top improvement tip:</strong> <span id="star-tip"></span>
+        </div>
+        <div class="star-evaluator-note" id="star-evaluator-note"></div>
+      </div>
+
+      <!-- Follow-up Question Area (shown when STAR elements are missing) -->
+      <div class="followup-area" id="followup-area" style="display:none;">
+        <div class="followup-header">
+          <span class="followup-badge">Follow-up</span>
+          <span class="followup-element" id="followup-element"></span>
+        </div>
+        <p class="followup-question" id="followup-question"></p>
+        <textarea id="followup-answer-text" class="textarea" placeholder="Type your follow-up answer here..." rows="4"></textarea>
+        <div class="followup-actions">
+          <button class="btn btn-ghost btn-sm" id="followup-skip-btn">Skip &amp; Continue</button>
+          <button class="btn btn-primary btn-sm" id="followup-submit-btn">Submit Follow-up</button>
         </div>
       </div>
     </div>
@@ -294,8 +327,12 @@
 <section class="view" id="view-feedback">
   <div class="container">
     <div class="feedback-header">
-      <h1 class="section-title">Interview Evaluation Report</h1>
-      <div id="demo-evaluation-badge"></div>
+      <h1 class="section-title">Interview Feedback Report</h1>
+      <p class="feedback-sub">Your answers were scored using the <strong>STAR method</strong>. When Google Gemini AI is configured, answers are evaluated by AI; otherwise, a heuristic pattern-matching evaluator is used. Each answer is labeled accordingly. Scores evaluate answer <em>content</em> only — not tone, accent, or appearance. <strong>Provisional</strong> labels indicate thin evidence.</p>
+      <div class="feedback-meta">
+        <span class="feedback-meta-item">Answers assessed: <strong id="answers-count">0</strong></span>
+        <span class="feedback-provisional-label" id="feedback-provisional-label" style="display:none;"></span>
+      </div>
     </div>
 
     <div class="score-card">
@@ -312,25 +349,39 @@
         </svg>
         <div class="score-ring-inner">
           <div class="score-num" id="score-num">0</div>
-          <div class="score-label">Match Score</div>
+          <div class="score-label">STAR Score</div>
         </div>
+      </div>
+      <div class="score-breakdown" id="score-breakdown">
+        <!-- STAR breakdown rows rendered dynamically -->
       </div>
     </div>
 
     <div class="feedback-grid">
       <div class="feedback-card feedback-strengths">
-        <h3>Strengths</h3>
+        <h3>Strongest Answers &amp; Skills</h3>
         <ul id="strengths-list"></ul>
       </div>
       <div class="feedback-card feedback-weaknesses">
-        <h3>Areas for Improvement</h3>
+        <h3>Most Important Weaknesses</h3>
         <ul id="weaknesses-list"></ul>
       </div>
     </div>
 
-    <div class="feedback-card feedback-tips-card" style="margin-top: 16px;">
-      <h3>Actionable Rubric Tips</h3>
-      <div class="tips-grid" id="tips-list"></div>
+    <div class="feedback-card">
+      <h3>Three Prioritised Improvement Actions</h3>
+      <div class="actions-list" id="improvement-actions-list"></div>
+    </div>
+
+    <div class="feedback-card">
+      <h3>Job-Description Competency Analysis</h3>
+      <div id="jd-competencies"></div>
+    </div>
+
+    <div class="feedback-card">
+      <h3>Suggested Practice Questions</h3>
+      <p style="font-size:13px;color:var(--text-mute);margin-bottom:12px;">Based on your weakest STAR areas.</p>
+      <ul class="practice-questions-list" id="practice-questions-list"></ul>
     </div>
 
     <div class="feedback-card feedback-answers-card" style="margin-top: 16px;">
@@ -338,9 +389,60 @@
       <div id="answers-breakdown"></div>
     </div>
 
-    <div class="feedback-actions" style="margin-top: 24px;">
-      <button class="btn btn-primary btn-lg" data-view="setup">Practise Again</button>
+    <div class="feedback-card" id="delivery-note">
+      <!-- Delivery note rendered dynamically -->
+    </div>
+
+    <div class="feedback-actions">
+      <button class="btn btn-primary btn-lg" data-view="setup">New Interview</button>
       <button class="btn btn-ghost btn-lg" data-view="landing">Back to Home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRACTICE ============ -->
+<section class="view" id="view-practice">
+  <div class="container">
+    <div class="practice-header">
+      <button class="btn btn-ghost btn-back" data-view="feedback">&larr; Back to Report</button>
+      <h1 class="section-title">Practice &amp; Retry</h1>
+    </div>
+
+    <div class="practice-disclaimer">
+      <strong>Note:</strong> This tool helps you practise improving your answers. A higher score on a revised answer means it contains more detectable STAR elements — this does NOT guarantee real interview success. Always seek feedback from real interviewers and mentors.
+    </div>
+
+    <div class="practice-grid">
+      <!-- Original answer + scores -->
+      <div class="practice-card">
+        <div class="practice-card-header">
+          <span class="practice-card-badge">Original</span>
+          <h3>Your Original Answer</h3>
+        </div>
+        <div class="practice-question-box">
+          <div class="practice-question-label">Question</div>
+          <p id="practice-question" class="practice-question-text"></p>
+        </div>
+        <div class="practice-original-answer-box">
+          <div class="practice-answer-label">Your answer</div>
+          <div class="practice-original-answer" id="practice-original-answer"></div>
+        </div>
+        <div class="practice-original-star" id="practice-original-star"></div>
+      </div>
+
+      <!-- Revised answer area -->
+      <div class="practice-card">
+        <div class="practice-card-header">
+          <span class="practice-card-badge practice-card-badge-revised">Revised</span>
+          <h3>Write an Improved Answer</h3>
+        </div>
+        <p style="font-size:14px;color:var(--text-dim);margin-bottom:12px;">
+          Read your original feedback, then rewrite your answer below. Focus on the areas marked as missing.
+        </p>
+        <textarea id="practice-revised-answer" class="textarea" placeholder="Type your improved answer here..." rows="10"></textarea>
+        <button class="btn btn-primary btn-full" id="practice-reevaluate-btn" style="margin-top:16px;">Re-evaluate Revised Answer</button>
+        <div id="practice-comparison"></div>
+      </div>
     </div>
   </div>
 </section>
@@ -349,7 +451,7 @@
 <footer class="footer">
   <div class="footer-inner">
     <span class="footer-logo">Voxora</span>
-    <span class="footer-sub">Interactive Prototype · Standardized Rubrics</span>
+    <span class="footer-sub">Prototype · Gemini AI + Heuristic STAR evaluation · No login required</span>
   </div>
 </footer>
 
@@ -357,8 +459,10 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/mock-data.js"></script>
+<script src="js/star-evaluator.js"></script>
+<script src="js/app.js"></script>
 <script src="js/interview.js"></script>
 <script src="js/feedback.js"></script>
-<script src="js/app.js"></script>
+<script src="js/practice.js"></script>
 </body>
 </html>

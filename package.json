@@ -1,0 +1,12 @@
+{
+  "name": "voxora",
+  "version": "1.0.0",
+  "description": "Voxora — AI-powered mock interview preparation platform",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

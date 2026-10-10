@@ -11,8 +11,12 @@ const Interview = {
     selectedCategory: 'general',
     questionCount: 3,
     currentIndex: 0,
-    questions: [],
-    answers: [], // Stores { questionId, questionText, answer }
+    questions: MOCK_QUESTIONS,
+    answers: [],
+    evaluations: [],
+    currentEvaluation: null,
+    followUpActive: false,
+    followUpQuestion: null,
     isRecording: false,
     recognition: null,
     speechSupported: false,
@@ -48,6 +52,10 @@ const Interview = {
     this.state.active = true;
     this.state.currentIndex = 0;
     this.state.answers = [];
+    this.state.evaluations = [];
+    this.state.currentEvaluation = null;
+    this.state.followUpActive = false;
+    this.state.followUpQuestion = null;
     this.state.elapsedTime = 0;
     
     // Config values passed from App/Setup
@@ -125,10 +133,19 @@ const Interview = {
 
     // Restore previously entered answer if navigating back/forth
     const answerText = document.getElementById('answer-text');
-    const existing = this.state.answers[index];
-    answerText.value = existing ? existing.answer : '';
-
+    answerText.value = '';
+    answerText.readOnly = false;
     this.updateStatus('Ready to answer');
+
+    // Hide STAR feedback panel and follow-up area
+    const starPanel = document.getElementById('star-feedback-panel');
+    if (starPanel) starPanel.style.display = 'none';
+    const followUpArea = document.getElementById('followup-area');
+    if (followUpArea) followUpArea.style.display = 'none';
+    this.state.followUpActive = false;
+    this.state.currentEvaluation = null;
+
+    // Reset mic button
     this.resetMicButton();
 
     const nextBtn = document.getElementById('next-btn');
@@ -345,8 +362,8 @@ const Interview = {
     }
   },
 
-  // ===== SUBMISSION FLOW =====
-  submitAnswer() {
+  // ===== ANSWER FLOW =====
+  async submitAnswer() {
     this.stopRecording();
     const answerText = document.getElementById('answer-text');
     const answer = answerText ? answerText.value.trim() : '';
@@ -356,16 +373,298 @@ const Interview = {
       return;
     }
 
-    const currentQ = this.state.questions[this.state.currentIndex];
+    const q = this.state.questions[this.state.currentIndex];
+    const jdText = App.state.jdText || '';
+
+    // Store the answer immediately
     this.state.answers[this.state.currentIndex] = {
-      questionId: currentQ.id,
-      questionText: currentQ.text,
+      questionId: q.id,
+      questionText: q.text,
+      questionCategory: q.category,
       answer: answer
     };
 
-    if (this.state.currentIndex < this.state.questions.length - 1) {
-      this.loadQuestion(this.state.currentIndex + 1);
-      App.toast('Answer saved', 'success');
+    // Make answer text read-only during evaluation
+    answerText.readOnly = true;
+
+    // Show loading state
+    this.showEvaluationLoading();
+
+    // Try AI evaluation via backend API
+    let evaluation = null;
+    try {
+      evaluation = await this.callEvaluateAPI(answer, q.text, jdText);
+    } catch (err) {
+      console.warn('[Voxora] AI evaluation failed, falling back to heuristic:', err.message);
+    }
+
+    // Fall back to heuristic if AI didn't return
+    if (!evaluation) {
+      evaluation = StarEvaluator.evaluate(answer, q.text, jdText);
+      App.toast('Using heuristic evaluation (AI unavailable).', '');
+    } else {
+      App.toast('Answer evaluated by Gemini AI — review your STAR feedback below.', 'success');
+    }
+
+    // Store the evaluation
+    this.state.evaluations[this.state.currentIndex] = evaluation;
+    this.state.currentEvaluation = evaluation;
+
+    // Show inline STAR feedback
+    this.showStarFeedback(evaluation);
+
+    // Check if a follow-up is needed
+    const followUp = StarEvaluator.needsFollowUp(evaluation);
+    if (followUp) {
+      this.showFollowUp(followUp);
+    } else {
+      // No follow-up needed — enable "Next Question" button
+      this.enableProceed();
+    }
+  },
+
+  // ===== Call backend /api/evaluate endpoint =====
+  async callEvaluateAPI(answer, question, jd) {
+    const response = await fetch('/api/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        answer: answer,
+        question: question,
+        jd: jd || ''
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+
+    const data = await response.json();
+
+    // If the backend says to fall back, return null
+    if (data.fallback) {
+      console.info('[Voxora] Backend recommended fallback:', data.reason, data.message);
+      return null;
+    }
+
+    if (!data.success || !data.evaluation) {
+      throw new Error('Unexpected response format from server');
+    }
+
+    return data.evaluation;
+  },
+
+  // ===== Show loading spinner while evaluating =====
+  showEvaluationLoading() {
+    const panel = document.getElementById('star-feedback-panel');
+    if (!panel) return;
+
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <div class="star-loading">
+        <div class="star-loading-spinner"></div>
+        <p class="star-loading-text">Evaluating your answer with AI...</p>
+        <p class="star-loading-sub">This may take a few seconds.</p>
+      </div>
+    `;
+
+    // Disable the submit button while evaluating
+    const nextBtn = document.getElementById('next-btn');
+    if (nextBtn) {
+      nextBtn.disabled = true;
+      nextBtn.style.opacity = '0.5';
+      nextBtn.textContent = 'Evaluating...';
+    }
+
+    // Disable follow-up submit if active
+    const followUpSubmit = document.getElementById('followup-submit-btn');
+    if (followUpSubmit) {
+      followUpSubmit.disabled = true;
+      followUpSubmit.style.opacity = '0.5';
+    }
+  },
+
+  // ===== STAR FEEDBACK DISPLAY =====
+  showStarFeedback(evaluation) {
+    const panel = document.getElementById('star-feedback-panel');
+    if (!panel) return;
+
+    panel.style.display = 'block';
+
+    // Rebuild the panel structure (in case it was replaced by loading state)
+    const isAI = evaluation.evaluatorType === 'gemini';
+    const evaluatorBadge = isAI
+      ? '<span class="evaluator-badge evaluator-badge-ai">AI (Gemini)</span>'
+      : '<span class="evaluator-badge evaluator-badge-heuristic">Heuristic</span>';
+
+    panel.innerHTML = `
+      <div class="star-panel-header">
+        <h3>STAR Answer Evaluation ${evaluatorBadge}</h3>
+        <div class="star-total">
+          <span class="star-total-score" id="star-total-score">${evaluation.totalScore}</span>
+          <span class="star-total-max">/100</span>
+          ${evaluation.isProvisional ? '<span class="star-provisional">Provisional</span>' : ''}
+        </div>
+      </div>
+      <p class="star-panel-sub">${isAI ? 'AI-powered evaluation via Google Gemini.' : 'Heuristic evaluation — pattern matching, not AI.'}</p>
+      <div class="star-breakdown" id="star-breakdown"></div>
+      <div class="star-tip-box">
+        <strong>Top improvement tip:</strong> <span id="star-tip"></span>
+      </div>
+      <div class="star-evaluator-note" id="star-evaluator-note"></div>
+    `;
+
+    // Per-criterion breakdown
+    const breakdown = document.getElementById('star-breakdown');
+    if (breakdown) {
+      const criteria = ['situation', 'task', 'action', 'result', 'relevance'];
+      breakdown.innerHTML = criteria.map(key => {
+        const c = evaluation.criteria[key];
+        if (!c) return '';
+        const pct = Math.round((c.score / c.max) * 100);
+        const evidenceHtml = c.evidence
+          ? '<div class="star-evidence"><span class="star-evidence-label">Evidence:</span> "' + this.escapeHtml(c.evidence) + '"</div>'
+          : '<div class="star-evidence star-evidence-none">No direct evidence detected.</div>';
+        const missingHtml = c.missing
+          ? '<div class="star-missing"><span class="star-missing-label">Missing:</span> ' + this.escapeHtml(c.missing) + '</div>'
+          : '';
+        const suggestionHtml = c.suggestion
+          ? '<div class="star-suggestion"><span class="star-suggestion-label">Suggestion:</span> ' + this.escapeHtml(c.suggestion) + '</div>'
+          : '';
+        return `
+          <div class="star-criterion">
+            <div class="star-criterion-header">
+              <span class="star-criterion-name">${c.label}</span>
+              <span class="star-criterion-score">${c.score}<span class="star-criterion-max">/${c.max}</span></span>
+            </div>
+            <div class="star-criterion-bar"><div class="star-criterion-fill" style="width:${pct}%"></div></div>
+            <div class="star-criterion-desc">${c.desc}</div>
+            <div class="star-criterion-explanation">${this.escapeHtml(c.explanation)}</div>
+            ${evidenceHtml}
+            ${missingHtml}
+            ${suggestionHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Top improvement tip
+    const tipEl = document.getElementById('star-tip');
+    if (tipEl) tipEl.innerHTML = this.escapeHtml(evaluation.improvementTip);
+
+    // Evaluator note
+    const noteEl = document.getElementById('star-evaluator-note');
+    if (noteEl) noteEl.textContent = evaluation.evaluatorNote;
+  },
+
+  // ===== FOLLOW-UP QUESTION FLOW =====
+  showFollowUp(followUp) {
+    const area = document.getElementById('followup-area');
+    if (!area) return;
+
+    this.state.followUpActive = true;
+    this.state.followUpQuestion = followUp.question;
+
+    const qEl = document.getElementById('followup-question');
+    if (qEl) qEl.textContent = followUp.question;
+
+    const elementLabel = document.getElementById('followup-element');
+    if (elementLabel) elementLabel.textContent = followUp.element;
+
+    area.style.display = 'block';
+    area.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  },
+
+  async submitFollowUp() {
+    const followUpText = document.getElementById('followup-answer-text').value.trim();
+    if (!followUpText) {
+      App.toast('Please type a follow-up answer or click "Skip & Continue".', 'error');
+      return;
+    }
+
+    // Append follow-up to original answer
+    const idx = this.state.currentIndex;
+    const originalAnswer = this.state.answers[idx].answer;
+    const combinedAnswer = originalAnswer + '\n\n[Follow-up answer] ' + followUpText;
+
+    // Update the stored answer
+    this.state.answers[idx].answer = combinedAnswer;
+    const q = this.state.questions[idx];
+    const jdText = App.state.jdText || '';
+
+    // Update the answer text area
+    const answerText = document.getElementById('answer-text');
+    answerText.value = combinedAnswer;
+
+    // Show loading state
+    this.showEvaluationLoading();
+
+    // Hide follow-up area
+    document.getElementById('followup-area').style.display = 'none';
+    this.state.followUpActive = false;
+
+    // Try AI evaluation via backend API
+    let evaluation = null;
+    try {
+      evaluation = await this.callEvaluateAPI(combinedAnswer, q.text, jdText);
+    } catch (err) {
+      console.warn('[Voxora] AI evaluation failed for follow-up, falling back to heuristic:', err.message);
+    }
+
+    // Fall back to heuristic
+    if (!evaluation) {
+      evaluation = StarEvaluator.evaluate(combinedAnswer, q.text, jdText);
+      App.toast('Follow-up added — using heuristic evaluation.', '');
+    } else {
+      App.toast('Follow-up added — updated STAR feedback (Gemini AI).', 'success');
+    }
+
+    this.state.evaluations[idx] = evaluation;
+    this.state.currentEvaluation = evaluation;
+
+    // Show updated feedback
+    this.showStarFeedback(evaluation);
+    this.enableProceed();
+  },
+
+  skipFollowUp() {
+    document.getElementById('followup-area').style.display = 'none';
+    this.state.followUpActive = false;
+    this.enableProceed();
+    App.toast('Follow-up skipped. Proceeding to next question.', '');
+  },
+
+  // Enable the "Next Question" / "Submit & Finish" button after evaluation
+  enableProceed() {
+    const nextBtn = document.getElementById('next-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    // Reset disabled state from loading
+    nextBtn.disabled = false;
+    nextBtn.style.opacity = '';
+    nextBtn.classList.add('btn-ready');
+    nextBtn.textContent = this.state.currentIndex < this.state.questions.length - 1
+      ? 'Next Question →'
+      : 'Finish & View Report →';
+    // Re-bind the next button to proceed instead of submit
+    const newNext = nextBtn.cloneNode(true);
+    nextBtn.parentNode.replaceChild(newNext, nextBtn);
+    newNext.addEventListener('click', () => this.proceedToNext());
+    // Disable skip button since answer is already submitted
+    if (skipBtn) skipBtn.style.opacity = '0.4';
+    if (skipBtn) skipBtn.style.pointerEvents = 'none';
+
+    // Re-enable follow-up submit button if it was disabled
+    const followUpSubmit = document.getElementById('followup-submit-btn');
+    if (followUpSubmit) {
+      followUpSubmit.disabled = false;
+      followUpSubmit.style.opacity = '';
+    }
+  },
+
+  proceedToNext() {
+    const idx = this.state.currentIndex;
+    if (idx < this.state.questions.length - 1) {
+      this.loadQuestion(idx + 1);
     } else {
       this.finishInterview();
     }
@@ -373,12 +672,15 @@ const Interview = {
 
   skipQuestion() {
     this.stopRecording();
-    const currentQ = this.state.questions[this.state.currentIndex];
+    const q = this.state.questions[this.state.currentIndex];
     this.state.answers[this.state.currentIndex] = {
-      questionId: currentQ.id,
-      questionText: currentQ.text,
+      questionId: q.id,
+      questionText: q.text,
+      questionCategory: q.category,
       answer: '[Skipped]'
     };
+    // Create empty evaluation for skipped questions
+    this.state.evaluations[this.state.currentIndex] = StarEvaluator.buildEmptyEvaluation(q.text);
 
     if (this.state.currentIndex < this.state.questions.length - 1) {
       this.loadQuestion(this.state.currentIndex + 1);
@@ -389,8 +691,15 @@ const Interview = {
   },
 
   finishInterview() {
-    this.cleanup();
-    Feedback.render(this.state.answers, this.state.selectedCategory);
+    this.stopSpeaking();
+    this.stopRecording();
+    this.stopMicStream();
+    this.stopCamera();
+    this.stopTimer();
+    this.state.active = false;
+
+    // Pass answers AND evaluations to feedback
+    Feedback.render(this.state.answers, this.state.evaluations);
     App.navigate('feedback');
   },
 
@@ -436,23 +745,32 @@ const Interview = {
     const nextBtn = document.getElementById('next-btn');
     const endBtn = document.getElementById('end-interview-btn');
     const readBtn = document.getElementById('read-question-btn');
+    const followUpSubmit = document.getElementById('followup-submit-btn');
+    const followUpSkip = document.getElementById('followup-skip-btn');
 
-    [micBtn, skipBtn, nextBtn, endBtn, readBtn].forEach(btn => {
+    // Clone to remove old listeners
+    [micBtn, cameraStart, skipBtn, nextBtn, endBtn, readBtn, followUpSubmit, followUpSkip].forEach(btn => {
       if (!btn) return;
       const clone = btn.cloneNode(true);
       btn.parentNode.replaceChild(clone, btn);
     });
 
-    const newMic = document.getElementById('mic-btn');
-    const newSkip = document.getElementById('skip-btn');
-    const newNext = document.getElementById('next-btn');
-    const newEnd = document.getElementById('end-interview-btn');
-    const newRead = document.getElementById('read-question-btn');
+    // Re-bind
+    document.getElementById('mic-btn').addEventListener('click', () => this.toggleRecording());
+    document.getElementById('camera-start-btn').addEventListener('click', () => this.startCamera());
+    document.getElementById('skip-btn').addEventListener('click', () => this.skipQuestion());
+    document.getElementById('next-btn').addEventListener('click', () => this.submitAnswer());
+    document.getElementById('end-interview-btn').addEventListener('click', () => this.endInterview());
+    document.getElementById('read-question-btn').addEventListener('click', () => this.toggleSpeak());
+    const fSubmit = document.getElementById('followup-submit-btn');
+    const fSkip = document.getElementById('followup-skip-btn');
+    if (fSubmit) fSubmit.addEventListener('click', () => this.submitFollowUp());
+    if (fSkip) fSkip.addEventListener('click', () => this.skipFollowUp());
+  },
 
-    if (newMic) newMic.addEventListener('click', () => this.toggleRecording());
-    if (newSkip) newSkip.addEventListener('click', () => this.skipQuestion());
-    if (newNext) newNext.addEventListener('click', () => this.submitAnswer());
-    if (newEnd) newEnd.addEventListener('click', () => this.endInterview());
-    if (newRead) newRead.addEventListener('click', () => this.toggleSpeak());
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 };

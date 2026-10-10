@@ -81,6 +81,17 @@ const App = {
     } else if (view !== 'interview' && Interview.state.active) {
       Interview.cleanup();
     }
+
+    // Bind practice view button when entering practice
+    if (view === 'practice') {
+      const reEvalBtn = document.getElementById('practice-reevaluate-btn');
+      if (reEvalBtn) {
+        // Clone to remove old listeners
+        const clone = reEvalBtn.cloneNode(true);
+        reEvalBtn.parentNode.replaceChild(clone, reEvalBtn);
+        document.getElementById('practice-reevaluate-btn').addEventListener('click', () => Practice.reEvaluate());
+      }
+    }
   },
 
   // ===== SETUP & FORM BINDINGS =====

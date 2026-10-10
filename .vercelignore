@@ -1,0 +1,34 @@
+# Local development server (Vercel uses api/ directory instead)
+server.js
+
+# Environment files (also in .gitignore — double protection)
+.env
+.env.local
+.env.*.local
+
+# Local backup folders
+backup_*/
+
+# WorkBuddy internal data
+.workbuddy-ai/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
