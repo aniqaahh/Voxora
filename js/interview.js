@@ -24,7 +24,8 @@ const Interview = {
     micStream: null,
     cameraStream: null,
     timerInterval: null,
-    elapsedTime: 0
+    elapsedTime: 0,
+    readyToProceed: false
   },
 
   // ===== RANDOM CATEGORY SELECTION (DICE ROLL) =====
@@ -148,11 +149,23 @@ const Interview = {
     // Reset mic button
     this.resetMicButton();
 
+    // Switch next button to "submit" mode via flag (no DOM cloning)
+    this.state.readyToProceed = false;
     const nextBtn = document.getElementById('next-btn');
-    if (index === this.state.questions.length - 1) {
-      nextBtn.textContent = 'Submit & Finish →';
-    } else {
-      nextBtn.textContent = 'Submit Answer →';
+    if (nextBtn) {
+      nextBtn.disabled = false;
+      nextBtn.style.opacity = '';
+      nextBtn.classList.remove('btn-ready');
+      nextBtn.textContent = (index === this.state.questions.length - 1)
+        ? 'Submit & Finish →'
+        : 'Submit Answer →';
+    }
+
+    // Re-enable skip button for the new question
+    const skipBtn = document.getElementById('skip-btn');
+    if (skipBtn) {
+      skipBtn.style.opacity = '';
+      skipBtn.style.pointerEvents = '';
     }
   },
 
@@ -645,10 +658,8 @@ const Interview = {
     nextBtn.textContent = this.state.currentIndex < this.state.questions.length - 1
       ? 'Next Question →'
       : 'Finish & View Report →';
-    // Re-bind the next button to proceed instead of submit
-    const newNext = nextBtn.cloneNode(true);
-    nextBtn.parentNode.replaceChild(newNext, nextBtn);
-    newNext.addEventListener('click', () => this.proceedToNext());
+    // Switch next button to "proceed" mode via flag (no DOM cloning)
+    this.state.readyToProceed = true;
     // Disable skip button since answer is already submitted
     if (skipBtn) skipBtn.style.opacity = '0.4';
     if (skipBtn) skipBtn.style.pointerEvents = 'none';
@@ -658,6 +669,19 @@ const Interview = {
     if (followUpSubmit) {
       followUpSubmit.disabled = false;
       followUpSubmit.style.opacity = '';
+    }
+  },
+
+  // ===== Dispatch next-button click based on current state =====
+  // When readyToProceed is false, the button submits the current answer.
+  // When true (set by enableProceed after evaluation), it advances to
+  // the next question or finishes the interview. This replaces the
+  // previous clone-and-rebind approach that destroyed the submit listener.
+  handleNextClick() {
+    if (this.state.readyToProceed) {
+      this.proceedToNext();
+    } else {
+      this.submitAnswer();
     }
   },
 
@@ -760,7 +784,7 @@ const Interview = {
     document.getElementById('mic-btn').addEventListener('click', () => this.toggleRecording());
     document.getElementById('camera-start-btn').addEventListener('click', () => this.startCamera());
     document.getElementById('skip-btn').addEventListener('click', () => this.skipQuestion());
-    document.getElementById('next-btn').addEventListener('click', () => this.submitAnswer());
+    document.getElementById('next-btn').addEventListener('click', () => this.handleNextClick());
     document.getElementById('end-interview-btn').addEventListener('click', () => this.endInterview());
     document.getElementById('read-question-btn').addEventListener('click', () => this.toggleSpeak());
     const fSubmit = document.getElementById('followup-submit-btn');
