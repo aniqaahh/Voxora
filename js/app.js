@@ -1,18 +1,20 @@
 // ============================================================
-// Voxora App — Navigation, Setup, State Management
+// Voxora App — Navigation, Setup, & State Controller
+// Handles view switching, category selection, dice roll trigger,
+// setup validation, and session parameters.
 // ============================================================
 
 const App = {
   state: {
     currentView: 'landing',
+    selectedCategory: 'general',
+    jobRole: 'Software Engineer',
+    experienceLevel: 'fresh_grad',
+    questionCount: 3,
     resumeText: '',
     resumeFileName: '',
     jdText: '',
-    interviewMode: 'voice',
-    currentQuestionIndex: 0,
-    answers: [],
-    timerInterval: null,
-    elapsedTime: 0
+    interviewMode: 'voice'
   },
 
   init() {
@@ -21,9 +23,8 @@ const App = {
     this.navigate('landing');
   },
 
-  // ===== NAV =====
+  // ===== NAVIGATION CONTROLLER =====
   bindNav() {
-    // Any element with data-view navigates
     document.querySelectorAll('[data-view]').forEach(el => {
       el.addEventListener('click', (e) => {
         e.preventDefault();
@@ -32,18 +33,24 @@ const App = {
       });
     });
 
-    // Mobile nav toggle
+    // Mobile navigation toggle
     const navToggle = document.getElementById('nav-toggle');
     const navLinks = document.querySelector('.nav-links');
-    navToggle.addEventListener('click', () => {
-      navToggle.classList.toggle('active');
-      navLinks.classList.toggle('mobile-open');
-    });
+    if (navToggle && navLinks) {
+      navToggle.addEventListener('click', () => {
+        navToggle.classList.toggle('active');
+        navLinks.classList.toggle('mobile-open');
+      });
+    }
 
-    // Hero "How it works" scroll
-    document.getElementById('hero-learn').addEventListener('click', () => {
-      document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' });
-    });
+    // Hero "How it works" scroll anchor
+    const heroLearn = document.getElementById('hero-learn');
+    if (heroLearn) {
+      heroLearn.addEventListener('click', () => {
+        const section = document.getElementById('how-it-works');
+        if (section) section.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
   },
 
   navigate(view) {
@@ -55,89 +62,156 @@ const App = {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // Close mobile menu
+    // Close mobile menu on navigation
     const navToggle = document.getElementById('nav-toggle');
     const navLinks = document.querySelector('.nav-links');
-    navToggle.classList.remove('active');
-    navLinks.classList.remove('mobile-open');
+    if (navToggle && navLinks) {
+      navToggle.classList.remove('active');
+      navLinks.classList.remove('mobile-open');
+    }
 
-    // Lifecycle hooks
+    // Session lifecycle management
     if (view === 'interview') {
-      Interview.start();
+      Interview.start({
+        category: this.state.selectedCategory,
+        questionCount: this.state.questionCount,
+        jobRole: this.state.jobRole,
+        experienceLevel: this.state.experienceLevel
+      });
     } else if (view !== 'interview' && Interview.state.active) {
       Interview.cleanup();
     }
   },
 
-  // ===== SETUP =====
+  // ===== SETUP & FORM BINDINGS =====
   bindSetup() {
-    // Mode selection
+    // 1. Category Dropdown Listener
+    const categorySelect = document.getElementById('category-select');
+    const categoryDesc = document.getElementById('category-description');
+    
+    if (categorySelect) {
+      categorySelect.addEventListener('change', (e) => {
+        this.state.selectedCategory = e.target.value;
+        if (categoryDesc && typeof CATEGORY_DESCRIPTIONS !== 'undefined') {
+          categoryDesc.textContent = CATEGORY_DESCRIPTIONS[e.target.value] || '';
+        }
+      });
+    }
+
+    // 2. Random Dice Roll Listener
+    const diceBtn = document.getElementById('dice-roll-btn');
+    if (diceBtn) {
+      diceBtn.addEventListener('click', () => {
+        const rolledCategory = Interview.rollRandomCategory();
+        this.state.selectedCategory = rolledCategory;
+        this.toast(`🎲 Rolled Category: ${rolledCategory.toUpperCase()}`, 'success');
+      });
+    }
+
+    // 3. Experience & Question Count Inputs
+    const roleInput = document.getElementById('job-role-input');
+    if (roleInput) {
+      roleInput.addEventListener('input', (e) => {
+        this.state.jobRole = e.target.value;
+      });
+    }
+
+    const expSelect = document.getElementById('experience-level-select');
+    if (expSelect) {
+      expSelect.addEventListener('change', (e) => {
+        this.state.experienceLevel = e.target.value;
+      });
+    }
+
+    const countSelect = document.getElementById('question-count-select');
+    if (countSelect) {
+      countSelect.addEventListener('change', (e) => {
+        this.state.questionCount = parseInt(e.target.value, 10) || 3;
+      });
+    }
+
+    // 4. Mode Selection Cards
     document.querySelectorAll('.mode-card').forEach(card => {
       card.addEventListener('click', () => {
         document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('mode-card-active'));
         card.classList.add('mode-card-active');
         const radio = card.querySelector('input[type="radio"]');
-        radio.checked = true;
-        this.state.interviewMode = radio.value;
+        if (radio) {
+          radio.checked = true;
+          this.state.interviewMode = radio.value;
+        }
       });
     });
 
-    // Resume file upload
+    // 5. Resume File Upload
     const uploadZone = document.getElementById('upload-zone');
     const fileInput = document.getElementById('resume-file');
-    const fileInfo = document.getElementById('resume-file-info');
 
-    uploadZone.addEventListener('click', () => fileInput.click());
+    if (uploadZone && fileInput) {
+      uploadZone.addEventListener('click', () => fileInput.click());
+      uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.classList.add('dragover');
+      });
+      uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+      uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+          fileInput.files = e.dataTransfer.files;
+          this.handleResumeFile(e.dataTransfer.files[0]);
+        }
+      });
 
-    uploadZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadZone.classList.add('dragover');
-    });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-    uploadZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadZone.classList.remove('dragover');
-      if (e.dataTransfer.files.length) {
-        fileInput.files = e.dataTransfer.files;
-        this.handleResumeFile(e.dataTransfer.files[0]);
-      }
-    });
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files.length) {
+          this.handleResumeFile(fileInput.files[0]);
+        }
+      });
+    }
 
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files.length) {
-        this.handleResumeFile(fileInput.files[0]);
-      }
-    });
+    // Text inputs
+    const resumeArea = document.getElementById('resume-text');
+    if (resumeArea) {
+      resumeArea.addEventListener('input', (e) => {
+        this.state.resumeText = e.target.value;
+      });
+    }
 
-    // Resume text change
-    document.getElementById('resume-text').addEventListener('input', (e) => {
-      this.state.resumeText = e.target.value;
-    });
+    const jdArea = document.getElementById('jd-text');
+    if (jdArea) {
+      jdArea.addEventListener('input', (e) => {
+        this.state.jdText = e.target.value;
+      });
+    }
 
-    // JD text change
-    document.getElementById('jd-text').addEventListener('input', (e) => {
-      this.state.jdText = e.target.value;
-    });
+    const sampleBtn = document.getElementById('jd-sample-btn');
+    if (sampleBtn && typeof SAMPLE_JD !== 'undefined') {
+      sampleBtn.addEventListener('click', () => {
+        const jdElem = document.getElementById('jd-text');
+        if (jdElem) {
+          jdElem.value = SAMPLE_JD;
+          this.state.jdText = SAMPLE_JD;
+          this.toast('Sample job description loaded', 'success');
+        }
+      });
+    }
 
-    // JD sample
-    document.getElementById('jd-sample-btn').addEventListener('click', () => {
-      document.getElementById('jd-text').value = SAMPLE_JD;
-      this.state.jdText = SAMPLE_JD;
-      this.toast('Sample job description loaded', 'success');
-    });
-
-    // Start interview
-    document.getElementById('start-interview-btn').addEventListener('click', () => {
-      if (this.validateSetup()) {
-        this.navigate('interview');
-      }
-    });
+    // Start Button
+    const startBtn = document.getElementById('start-interview-btn');
+    if (startBtn) {
+      startBtn.addEventListener('click', () => {
+        if (this.validateSetup()) {
+          this.navigate('interview');
+        }
+      });
+    }
   },
 
   handleResumeFile(file) {
     const fileInfo = document.getElementById('resume-file-info');
     if (file.size > 5 * 1024 * 1024) {
-      this.toast('File too large. Max 5MB.', 'error');
+      this.toast('File too large. Maximum size is 5MB.', 'error');
       return;
     }
     if (file.type !== 'application/pdf') {
@@ -145,25 +219,26 @@ const App = {
       return;
     }
     this.state.resumeFileName = file.name;
-    this.state.resumeText = `[PDF uploaded: ${file.name} — ${this.formatSize(file.size)}]`;
+    this.state.resumeText = `[PDF uploaded: ${file.name}]`;
 
-    // Show file info
-    fileInfo.classList.remove('hidden');
-    fileInfo.innerHTML = `
-      <span class="file-icon">📄</span>
-      <span class="file-name">${file.name}</span>
-      <span class="file-size">${this.formatSize(file.size)}</span>
-      <span class="file-remove" id="file-remove">&times;</span>
-    `;
-    document.getElementById('file-remove').addEventListener('click', () => {
-      this.state.resumeFileName = '';
-      this.state.resumeText = '';
-      document.getElementById('resume-file').value = '';
-      fileInfo.classList.add('hidden');
-      fileInfo.innerHTML = '';
-    });
+    if (fileInfo) {
+      fileInfo.classList.remove('hidden');
+      fileInfo.innerHTML = `
+        <span class="file-icon">📄</span>
+        <span class="file-name">${file.name}</span>
+        <span class="file-size">${this.formatSize(file.size)}</span>
+        <span class="file-remove" id="file-remove">&times;</span>
+      `;
+      document.getElementById('file-remove').addEventListener('click', () => {
+        this.state.resumeFileName = '';
+        this.state.resumeText = '';
+        document.getElementById('resume-file').value = '';
+        fileInfo.classList.add('hidden');
+        fileInfo.innerHTML = '';
+      });
+    }
 
-    this.toast(`Resume uploaded: ${file.name}`, 'success');
+    this.toast(`Resume loaded: ${file.name}`, 'success');
   },
 
   formatSize(bytes) {
@@ -173,28 +248,17 @@ const App = {
   },
 
   validateSetup() {
-    const resumeText = document.getElementById('resume-text').value.trim();
-    const jdText = document.getElementById('jd-text').value.trim();
-
-    if (!this.state.resumeText && resumeText.length < 10) {
-      this.toast('Please upload a resume PDF or paste your resume text.', 'error');
+    if (!this.state.selectedCategory) {
+      this.toast('Please select an interview category.', 'error');
       return false;
     }
-    // Update state from textarea if file not used
-    if (!this.state.resumeText && resumeText) {
-      this.state.resumeText = resumeText;
-    }
-    if (jdText.length < 20) {
-      this.toast('Please paste a job description (at least a few sentences).', 'error');
-      return false;
-    }
-    this.state.jdText = jdText;
     return true;
   },
 
-  // ===== TOAST =====
+  // ===== TOAST NOTIFICATION =====
   toast(message, type = '') {
     const t = document.getElementById('toast');
+    if (!t) return;
     t.textContent = message;
     t.className = 'toast show toast-' + type;
     clearTimeout(this._toastTimer);
@@ -204,5 +268,4 @@ const App = {
   }
 };
 
-// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => App.init());
