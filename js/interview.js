@@ -741,6 +741,7 @@ const Interview = {
   // ===== BIND CONTROLS =====
   bindControls() {
     const micBtn = document.getElementById('mic-btn');
+    const cameraStart = document.getElementById('camera-start-btn');
     const skipBtn = document.getElementById('skip-btn');
     const nextBtn = document.getElementById('next-btn');
     const endBtn = document.getElementById('end-interview-btn');
