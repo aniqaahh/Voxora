@@ -219,37 +219,135 @@ const App = {
     }
   },
 
-  handleResumeFile(file) {
+  async handleResumeFile(file) {
     const fileInfo = document.getElementById('resume-file-info');
+
+    // ---- Validation ----
     if (file.size > 5 * 1024 * 1024) {
       this.toast('File too large. Maximum size is 5MB.', 'error');
       return;
     }
-    if (file.type !== 'application/pdf') {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       this.toast('Please upload a PDF file.', 'error');
       return;
     }
-    this.state.resumeFileName = file.name;
-    this.state.resumeText = `[PDF uploaded: ${file.name}]`;
 
+    // ---- Check PDF.js availability ----
+    if (typeof pdfjsLib === 'undefined') {
+      this.toast('PDF library failed to load. Please paste resume text manually.', 'error');
+      this.state.resumeFileName = file.name;
+      this.state.resumeText = '';
+      return;
+    }
+
+    this.state.resumeFileName = file.name;
+
+    // ---- Show loading state ----
     if (fileInfo) {
       fileInfo.classList.remove('hidden');
       fileInfo.innerHTML = `
         <span class="file-icon">📄</span>
         <span class="file-name">${file.name}</span>
         <span class="file-size">${this.formatSize(file.size)}</span>
-        <span class="file-remove" id="file-remove">&times;</span>
+        <span class="file-extracting">Extracting text…</span>
       `;
-      document.getElementById('file-remove').addEventListener('click', () => {
+    }
+    this.toast(`Reading ${file.name}…`, '');
+
+    try {
+      // ---- Read file as ArrayBuffer ----
+      const arrayBuffer = await file.arrayBuffer();
+
+      // ---- Load PDF with PDF.js ----
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const numPages = pdfDoc.numPages;
+      const pageTexts = [];
+
+      for (let i = 1; i <= numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map(item => item.str)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (pageText) pageTexts.push(pageText);
+      }
+
+      const extractedText = pageTexts.join('\n\n').trim();
+
+      if (!extractedText) {
+        // PDF has no selectable text (likely scanned/image-based)
+        this.state.resumeText = '';
+        if (fileInfo) {
+          fileInfo.innerHTML = `
+            <span class="file-icon">📄</span>
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${this.formatSize(file.size)}</span>
+            <span class="file-warning">No text found — paste manually</span>
+            <span class="file-remove" id="file-remove">&times;</span>
+          `;
+          this.bindFileRemove(fileInfo);
+        }
+        this.toast('No selectable text found in this PDF (it may be scanned). Please paste your resume text below.', 'error');
+        return;
+      }
+
+      // ---- Store extracted text ----
+      this.state.resumeText = extractedText;
+
+      // ---- Populate the textarea so the user can review/edit ----
+      const resumeTextarea = document.getElementById('resume-text');
+      if (resumeTextarea) {
+        resumeTextarea.value = extractedText;
+      }
+
+      // ---- Show success state with extracted info ----
+      const preview = extractedText.substring(0, 60).replace(/\n/g, ' ');
+      if (fileInfo) {
+        fileInfo.innerHTML = `
+          <span class="file-icon">📄</span>
+          <span class="file-name">${file.name}</span>
+          <span class="file-size">${this.formatSize(file.size)}</span>
+          <span class="file-extracted">${numPages} page${numPages > 1 ? 's' : ''} · ${extractedText.length} chars extracted</span>
+          <span class="file-remove" id="file-remove">&times;</span>
+        `;
+        this.bindFileRemove(fileInfo);
+      }
+
+      this.toast(`Resume parsed: ${numPages} page${numPages > 1 ? 's' : ''}, ${extractedText.length} characters extracted`, 'success');
+
+    } catch (err) {
+      console.error('PDF parsing error:', err);
+      this.state.resumeText = '';
+      if (fileInfo) {
+        fileInfo.innerHTML = `
+          <span class="file-icon">📄</span>
+          <span class="file-name">${file.name}</span>
+          <span class="file-size">${this.formatSize(file.size)}</span>
+          <span class="file-warning">Parse failed — paste manually</span>
+          <span class="file-remove" id="file-remove">&times;</span>
+        `;
+        this.bindFileRemove(fileInfo);
+      }
+      this.toast('Could not read this PDF. Please paste your resume text manually.', 'error');
+    }
+  },
+
+  bindFileRemove(fileInfo) {
+    const removeBtn = document.getElementById('file-remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', () => {
         this.state.resumeFileName = '';
         this.state.resumeText = '';
-        document.getElementById('resume-file').value = '';
+        const fileInput = document.getElementById('resume-file');
+        if (fileInput) fileInput.value = '';
+        const resumeTextarea = document.getElementById('resume-text');
+        if (resumeTextarea) resumeTextarea.value = '';
         fileInfo.classList.add('hidden');
         fileInfo.innerHTML = '';
       });
     }
-
-    this.toast(`Resume loaded: ${file.name}`, 'success');
   },
 
   formatSize(bytes) {
