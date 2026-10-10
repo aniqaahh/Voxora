@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Voxora — Your experience. Your next opportunity.</title>
-  <meta name="description" content="Voxora is an AI-powered mock interview preparation platform. Practise job interviews using your resume and a target job description.">
+  <meta name="description" content="Voxora is an AI-powered mock interview preparation platform. Practise job interviews across multiple categories with transparent rubrics and live speech transcription.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -45,10 +45,10 @@
   <div class="hero">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
-      AI-Powered Interview Preparation
+      Interactive Practice Platform
     </div>
     <h1 class="hero-title">Your experience.<br><span class="gradient-text">Your next opportunity.</span></h1>
-    <p class="hero-sub">Voxora helps you practise real job interviews using your resume and a target job description. Get AI-driven feedback on your answers, voice, and presence — before the real thing.</p>
+    <p class="hero-sub">Voxora helps you practise real job interviews across multiple categories. Gain confidence with speech transcription and transparent STAR mark schemes.</p>
     <div class="hero-actions">
       <button class="btn btn-primary btn-lg" data-view="setup">Start Practising</button>
       <button class="btn btn-ghost btn-lg" id="hero-learn">How it works</button>
@@ -56,16 +56,16 @@
 
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="hero-stat-num">5+</div>
-        <div class="hero-stat-label">Mock Questions</div>
+        <div class="hero-stat-num">6</div>
+        <div class="hero-stat-label">Interview Types</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-num">2</div>
-        <div class="hero-stat-label">Interview Modes</div>
+        <div class="hero-stat-num">STAR</div>
+        <div class="hero-stat-label">Evaluation Rubric</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-num">100%</div>
-        <div class="hero-stat-label">Browser-Based</div>
+        <div class="hero-stat-label">Browser Speech Engine</div>
       </div>
     </div>
   </div>
@@ -75,23 +75,23 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">1</div>
-        <h3>Upload Your Resume</h3>
-        <p>Drop in a PDF or paste your resume text. Voxora reads your background to tailor questions.</p>
+        <h3>Select Category or Roll Dice</h3>
+        <p>Pick General HR, Behavioural, Technical, Situational, Internship, or Resume interviews — or roll the dice for a random category.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">2</div>
-        <h3>Paste a Job Description</h3>
-        <p>Add the job you're targeting. Questions align with the role's required skills and competencies.</p>
+        <h3>Configure Session Parameters</h3>
+        <p>Customize your target role, experience level, and question limit. Resume and JD uploads are optional.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">3</div>
-        <h3>Answer with Voice or Camera</h3>
-        <p>Respond naturally using your microphone, or enable your camera for a full interview simulation.</p>
+        <h3>Speak or Type Answers</h3>
+        <p>Answer using continuous voice transcription with live answer review and edit support.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon">4</div>
-        <h3>Get Detailed Feedback</h3>
-        <p>Receive a scored report with strengths, weaknesses, and actionable tips to improve.</p>
+        <h3>Review Transparent Feedback</h3>
+        <p>Get a weighted score breakdown based on established framework rubrics (such as STAR).</p>
       </div>
     </div>
   </div>
@@ -112,72 +112,105 @@
     </div>
 
     <div class="setup-grid">
-      <!-- Resume -->
+      <!-- 1. Category Selection & Dice Roll -->
       <div class="setup-card">
         <div class="setup-card-header">
           <span class="setup-step">1</span>
-          <h2>Your Resume</h2>
+          <h2>Interview Category</h2>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <select id="category-select" class="textarea" style="height: 44px; padding: 0 12px; font-size: 15px; flex: 1;">
+            <option value="general">General / HR Interview</option>
+            <option value="behavioural">Behavioural Interview (STAR)</option>
+            <option value="technical">Technical Interview</option>
+            <option value="situational">Situational Interview</option>
+            <option value="internship">Internship / Fresh Graduate</option>
+            <option value="resume">Resume-Based Interview</option>
+          </select>
+          <button type="button" class="btn btn-ghost" id="dice-roll-btn" style="white-space: nowrap;">🎲 Roll Random</button>
+        </div>
+
+        <p id="category-description" style="font-size: 13px; color: var(--text-dim, #6c757d); margin-top: 4px; line-height: 1.4;">
+          Practise essential personal, career, and motivational HR interview questions.
+        </p>
+
+        <div style="margin-top: 16px; border-top: 1px solid var(--border, #e0e0e0); padding-top: 12px;">
+          <label style="font-size: 13px; font-weight: 600;">Target Role:</label>
+          <input type="text" id="job-role-input" class="textarea" value="Software Engineer" style="height: 38px; padding: 0 10px; margin-top: 4px; font-size: 14px;">
+          
+          <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <div style="flex:1;">
+              <label style="font-size: 12px; font-weight: 600;">Experience Level:</label>
+              <select id="experience-level-select" class="textarea" style="height: 36px; padding: 0 8px; font-size: 13px; margin-top: 2px;">
+                <option value="student">Student</option>
+                <option value="intern">Intern</option>
+                <option value="fresh_grad" selected>Fresh Graduate</option>
+                <option value="experienced">Experienced Candidate</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label style="font-size: 12px; font-weight: 600;">Questions:</label>
+              <select id="question-count-select" class="textarea" style="height: 36px; padding: 0 8px; font-size: 13px; margin-top: 2px;">
+                <option value="3" selected>3 Questions</option>
+                <option value="5">5 Questions</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Resume (Optional) -->
+      <div class="setup-card">
+        <div class="setup-card-header">
+          <span class="setup-step">2</span>
+          <h2>Your Resume <span style="font-size: 12px; font-weight: normal; color: var(--text-dim, #888);">(Optional)</span></h2>
         </div>
         <div class="upload-zone" id="upload-zone">
           <div class="upload-icon">
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
               <path d="M24 6L24 32M24 6L14 16M24 6L34 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M8 34V38C8 40.21 9.79 42 12 42H36C38.21 42 40 40.21 40 38V34" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
             </svg>
           </div>
-          <p class="upload-title">Drop your PDF here or click to browse</p>
-          <p class="upload-sub">Max 5MB · PDF format</p>
+          <p class="upload-title">Drop PDF or click to browse</p>
           <input type="file" id="resume-file" accept=".pdf,application/pdf" hidden>
         </div>
         <div id="resume-file-info" class="resume-file-info hidden"></div>
-        <div class="upload-divider"><span>or paste text</span></div>
-        <textarea id="resume-text" class="textarea" placeholder="Paste your resume text here..." rows="6"></textarea>
+        <textarea id="resume-text" class="textarea" placeholder="Or paste resume text..." rows="3" style="margin-top:8px;"></textarea>
       </div>
 
-      <!-- JD -->
-      <div class="setup-card">
-        <div class="setup-card-header">
-          <span class="setup-step">2</span>
-          <h2>Job Description</h2>
-        </div>
-        <textarea id="jd-text" class="textarea textarea-tall" placeholder="Paste the job description for the role you're targeting..." rows="10"></textarea>
-        <div class="jd-sample">
-          <button class="btn btn-ghost btn-sm" id="jd-sample-btn">Use a sample job description</button>
-        </div>
-      </div>
-
-      <!-- Mode -->
+      <!-- 3. Job Description (Optional) -->
       <div class="setup-card">
         <div class="setup-card-header">
           <span class="setup-step">3</span>
+          <h2>Job Description <span style="font-size: 12px; font-weight: normal; color: var(--text-dim, #888);">(Optional)</span></h2>
+        </div>
+        <textarea id="jd-text" class="textarea" placeholder="Paste target job description..." rows="6"></textarea>
+        <div class="jd-sample" style="margin-top:6px;">
+          <button class="btn btn-ghost btn-sm" id="jd-sample-btn">Use sample JD</button>
+        </div>
+      </div>
+
+      <!-- 4. Mode Selection -->
+      <div class="setup-card">
+        <div class="setup-card-header">
+          <span class="setup-step">4</span>
           <h2>Interview Mode</h2>
         </div>
         <div class="mode-grid">
           <label class="mode-card mode-card-active" data-mode="voice">
             <input type="radio" name="mode" value="voice" checked>
-            <div class="mode-icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="11" y="4" width="6" height="12" rx="3" stroke="currentColor" stroke-width="2"/>
-                <path d="M6 13v1a8 8 0 0 0 16 0v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M14 22v3M11 25h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
             <div class="mode-info">
               <div class="mode-title">Voice Interview</div>
-              <div class="mode-desc">Answer questions using your microphone. Speech-to-text transcribes your answers in real time.</div>
+              <div class="mode-desc">Speech-to-text transcribes answers.</div>
             </div>
           </label>
           <label class="mode-card" data-mode="camera">
             <input type="radio" name="mode" value="camera">
-            <div class="mode-icon">
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="2" y="7" width="17" height="14" rx="3" stroke="currentColor" stroke-width="2"/>
-                <path d="M19 12l7-4v12l-7-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
             <div class="mode-info">
               <div class="mode-title">Voice + Camera</div>
-              <div class="mode-desc">Voice answers plus a live camera preview for a full interview simulation. Video is never recorded.</div>
+              <div class="mode-desc">Live camera preview enabled.</div>
             </div>
           </label>
         </div>
@@ -185,8 +218,7 @@
     </div>
 
     <div class="setup-action">
-      <button class="btn btn-primary btn-lg btn-full" id="start-interview-btn">Start Interview &rarr;</button>
-      <p class="setup-note">Note: Interview questions are mock samples. Camera is for live preview only — no video is stored.</p>
+      <button class="btn btn-primary btn-lg btn-full" id="start-interview-btn">Start Practice Interview &rarr;</button>
     </div>
   </div>
 </section>
@@ -195,33 +227,20 @@
 <section class="view" id="view-interview">
   <div class="container interview-layout">
     <div class="interview-main">
-      <!-- Question -->
       <div class="question-area" id="question-area">
         <div class="question-progress">
-          <span id="question-current">1</span> / <span id="question-total">5</span>
+          <span id="question-current">1</span> / <span id="question-total">3</span>
         </div>
         <div class="question-label">Interview Question</div>
         <p class="question-text" id="question-text">Loading question...</p>
-        <button class="btn btn-ghost btn-sm btn-read" id="read-question-btn" style="display:none;">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M8 3C5 3 2.5 5 2.5 8C2.5 9 3 10 3.5 10.5L2.5 12.5L4.5 11.5C5.5 12 6.5 12.5 8 12.5C11 12.5 13.5 10.5 13.5 8C13.5 5 11 3 8 3Z" stroke="currentColor" stroke-width="1.3"/>
-            <path d="M1 8C1 4.13 4.13 1 8 1C11.87 1 15 4.13 15 8C15 11.87 11.87 15 8 15" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-          Read Question
-        </button>
+        <button class="btn btn-ghost btn-sm btn-read" id="read-question-btn" style="display:none;">Read Question</button>
       </div>
 
-      <!-- Answer area -->
       <div class="answer-area">
-        <div class="answer-label">Your Answer</div>
+        <div class="answer-label">Your Recorded Answer Transcript (Editable)</div>
         <div class="answer-status" id="answer-status">Ready to answer</div>
         <div class="answer-controls">
           <button class="btn btn-mic" id="mic-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="2"/>
-              <path d="M5 11v1a7 7 0 0 0 14 0v-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <path d="M12 19v3M9.5 22h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
             <span id="mic-btn-label">Start Recording</span>
           </button>
           <textarea id="answer-text" class="textarea textarea-answer" placeholder="Or type your answer here..." rows="5"></textarea>
@@ -236,35 +255,29 @@
     <!-- Sidebar -->
     <aside class="interview-sidebar">
       <div class="sidebar-card" id="camera-card" style="display:none;">
-        <div class="sidebar-card-header">
-          <h3>Camera Preview</h3>
-          <span class="badge badge-live">LIVE</span>
-        </div>
+        <h3>Camera Preview</h3>
         <div class="camera-preview" id="camera-preview">
           <video id="camera-video" autoplay playsinline muted></video>
           <div class="camera-overlay" id="camera-overlay">
             <button class="btn btn-primary btn-sm" id="camera-start-btn">Enable Camera</button>
           </div>
         </div>
-        <p class="camera-note">Live preview only — no video is recorded or stored.</p>
       </div>
 
       <div class="sidebar-card">
-        <div class="sidebar-card-header">
-          <h3>Session Info</h3>
-        </div>
+        <h3>Session Info</h3>
         <div class="session-info">
+          <div class="session-row">
+            <span class="session-label">Category</span>
+            <span class="session-val" id="session-category">GENERAL</span>
+          </div>
           <div class="session-row">
             <span class="session-label">Mode</span>
             <span class="session-val" id="session-mode">Voice</span>
           </div>
           <div class="session-row">
-            <span class="session-label">Resume</span>
-            <span class="session-val" id="session-resume">—</span>
-          </div>
-          <div class="session-row">
             <span class="session-label">Questions</span>
-            <span class="session-val" id="session-questions">5</span>
+            <span class="session-val" id="session-questions">3</span>
           </div>
           <div class="session-row">
             <span class="session-label">Timer</span>
@@ -272,17 +285,6 @@
           </div>
         </div>
         <button class="btn btn-danger btn-full" id="end-interview-btn">End Interview</button>
-      </div>
-
-      <div class="sidebar-card sidebar-tips">
-        <h3>Tips</h3>
-        <ul>
-          <li>Click "Read Question" to hear it spoken aloud.</li>
-          <li>Take your time — there's no time limit per question.</li>
-          <li>Speak clearly and naturally.</li>
-          <li>You can type your answer instead of speaking.</li>
-          <li>Submit each answer to move to the next question.</li>
-        </ul>
       </div>
     </aside>
   </div>
@@ -292,8 +294,8 @@
 <section class="view" id="view-feedback">
   <div class="container">
     <div class="feedback-header">
-      <h1 class="section-title">Interview Feedback Report</h1>
-      <p class="feedback-sub">Here's your detailed breakdown. <strong>Note:</strong> This is sample feedback based on mock data — not generated by real AI analysis. In a production version, Voxora would use AI to analyze your answers, tone, and delivery.</p>
+      <h1 class="section-title">Interview Evaluation Report</h1>
+      <div id="demo-evaluation-badge"></div>
     </div>
 
     <div class="score-card">
@@ -310,29 +312,7 @@
         </svg>
         <div class="score-ring-inner">
           <div class="score-num" id="score-num">0</div>
-          <div class="score-label">Overall</div>
-        </div>
-      </div>
-      <div class="score-breakdown">
-        <div class="breakdown-row">
-          <span class="breakdown-label">Answer Quality</span>
-          <div class="breakdown-bar"><div class="breakdown-fill" data-score="78" style="width:0%"></div></div>
-          <span class="breakdown-val">78</span>
-        </div>
-        <div class="breakdown-row">
-          <span class="breakdown-label">Clarity &amp; Structure</span>
-          <div class="breakdown-bar"><div class="breakdown-fill" data-score="72" style="width:0%"></div></div>
-          <span class="breakdown-val">72</span>
-        </div>
-        <div class="breakdown-row">
-          <span class="breakdown-label">Confidence &amp; Tone</span>
-          <div class="breakdown-bar"><div class="breakdown-fill" data-score="65" style="width:0%"></div></div>
-          <span class="breakdown-val">65</span>
-        </div>
-        <div class="breakdown-row">
-          <span class="breakdown-label">Relevance to Role</span>
-          <div class="breakdown-bar"><div class="breakdown-fill" data-score="81" style="width:0%"></div></div>
-          <span class="breakdown-val">81</span>
+          <div class="score-label">Match Score</div>
         </div>
       </div>
     </div>
@@ -348,17 +328,17 @@
       </div>
     </div>
 
-    <div class="feedback-card feedback-tips-card">
-      <h3>Actionable Improvement Tips</h3>
+    <div class="feedback-card feedback-tips-card" style="margin-top: 16px;">
+      <h3>Actionable Rubric Tips</h3>
       <div class="tips-grid" id="tips-list"></div>
     </div>
 
-    <div class="feedback-card feedback-answers-card">
-      <h3>Question-by-Question Breakdown</h3>
+    <div class="feedback-card feedback-answers-card" style="margin-top: 16px;">
+      <h3>Transcript & Rubric Assessment Breakdown</h3>
       <div id="answers-breakdown"></div>
     </div>
 
-    <div class="feedback-actions">
+    <div class="feedback-actions" style="margin-top: 24px;">
       <button class="btn btn-primary btn-lg" data-view="setup">Practise Again</button>
       <button class="btn btn-ghost btn-lg" data-view="landing">Back to Home</button>
     </div>
@@ -369,7 +349,7 @@
 <footer class="footer">
   <div class="footer-inner">
     <span class="footer-logo">Voxora</span>
-    <span class="footer-sub">Prototype · Mock data · No login required</span>
+    <span class="footer-sub">Interactive Prototype · Standardized Rubrics</span>
   </div>
 </footer>
 
@@ -377,8 +357,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/mock-data.js"></script>
-<script src="js/app.js"></script>
 <script src="js/interview.js"></script>
 <script src="js/feedback.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
