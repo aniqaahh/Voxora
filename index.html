@@ -32,6 +32,8 @@
     <div class="nav-links">
       <a href="#" data-view="landing" class="nav-link">Home</a>
       <a href="#" data-view="setup" class="nav-link">Start Interview</a>
+      <a href="#" data-view="history" class="nav-link">History</a>
+      <a href="#" data-view="progress" class="nav-link">Progress</a>
       <a href="#" data-view="landing" class="nav-link nav-cta" id="nav-cta">Get Started</a>
     </div>
     <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu">
@@ -203,14 +205,7 @@
             <input type="radio" name="mode" value="voice" checked>
             <div class="mode-info">
               <div class="mode-title">Voice Interview</div>
-              <div class="mode-desc">Speech-to-text transcribes answers.</div>
-            </div>
-          </label>
-          <label class="mode-card" data-mode="camera">
-            <input type="radio" name="mode" value="camera">
-            <div class="mode-info">
-              <div class="mode-title">Voice + Camera</div>
-              <div class="mode-desc">Live camera preview enabled.</div>
+              <div class="mode-desc">Speech-to-text transcribes your answers.</div>
             </div>
           </label>
         </div>
@@ -219,7 +214,7 @@
 
     <div class="setup-action">
       <button class="btn btn-primary btn-lg btn-full" id="start-interview-btn">Start Interview &rarr;</button>
-      <p class="setup-note">Note: Interview questions are mock samples. STAR evaluation uses Google Gemini AI when configured (set GEMINI_API_KEY), with heuristic pattern matching as fallback. Camera is for live preview only — no video is stored.</p>
+      <p class="setup-note">Note: Interview questions are mock samples. STAR evaluation uses Google Gemini AI when configured (set GEMINI_API_KEY), with heuristic pattern matching as fallback.</p>
     </div>
   </div>
 </section>
@@ -287,16 +282,6 @@
 
     <!-- Sidebar -->
     <aside class="interview-sidebar">
-      <div class="sidebar-card" id="camera-card" style="display:none;">
-        <h3>Camera Preview</h3>
-        <div class="camera-preview" id="camera-preview">
-          <video id="camera-video" autoplay playsinline muted></video>
-          <div class="camera-overlay" id="camera-overlay">
-            <button class="btn btn-primary btn-sm" id="camera-start-btn">Enable Camera</button>
-          </div>
-        </div>
-      </div>
-
       <div class="sidebar-card">
         <h3>Session Info</h3>
         <div class="session-info">
@@ -447,6 +432,28 @@
   </div>
 </section>
 
+<!-- ============ HISTORY ============ -->
+<section class="view" id="view-history">
+  <div class="container">
+    <div class="history-header">
+      <button class="btn btn-ghost btn-back" data-view="landing">&larr; Back</button>
+      <h1 class="section-title">Interview History</h1>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</section>
+
+<!-- ============ PROGRESS ============ -->
+<section class="view" id="view-progress">
+  <div class="container">
+    <div class="progress-header">
+      <button class="btn btn-ghost btn-back" data-view="landing">&larr; Back</button>
+      <h1 class="section-title">Progress Dashboard</h1>
+    </div>
+    <div id="progress-dashboard"></div>
+  </div>
+</section>
+
 <!-- ============ FOOTER ============ -->
 <footer class="footer">
   <div class="footer-inner">
@@ -469,6 +476,7 @@
 <script src="js/mock-data.js"></script>
 <script src="js/star-evaluator.js"></script>
 <script src="js/app.js"></script>
+<script src="js/history.js"></script>
 <script src="js/interview.js"></script>
 <script src="js/feedback.js"></script>
 <script src="js/practice.js"></script>

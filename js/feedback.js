@@ -8,17 +8,23 @@
 // 'heuristic') that determines the badge shown to the user.
 //
 // Answer quality (STAR) is kept completely separate from delivery
-// feedback (clarity, tone) — camera mode does NOT infer honesty,
-// personality, or competence from facial expressions.
+// feedback (clarity, tone). Voxora does NOT infer honesty,
+// personality, or competence from any visual or audio data.
 // ============================================================
 
 const Feedback = {
 
-  render(answers, evaluations) {
+  // Flag: when true, indicates the feedback view is showing a
+  // historical session (loaded from History.viewSession). The
+  // action buttons are customized by History.viewSession() and
+  // reset by History.resetFeedbackView() on navigation away.
+  fromHistory: false,
+
+  render(answers, evaluations, jdText) {
     // Store for practice view access
     this.answers = answers || [];
     this.evaluations = evaluations || [];
-    this.jdText = App.state.jdText || '';
+    this.jdText = (jdText !== undefined) ? jdText : (App.state.jdText || '');
 
     // Generate the aggregated report
     const report = StarEvaluator.aggregateReport(this.evaluations, this.answers, this.jdText);
@@ -294,28 +300,13 @@ const Feedback = {
     const el = document.getElementById('delivery-note');
     if (!el) return;
 
-    const isCamera = App.state.interviewMode === 'camera';
     el.innerHTML = `
       <div class="delivery-section">
-        <h4>Delivery & Presentation (separate from answer quality)</h4>
+        <h4>Delivery &amp; Presentation (separate from answer quality)</h4>
         <p style="font-size:14px;color:var(--text-dim);margin-bottom:12px;">
           STAR scores above evaluate the <strong>content</strong> of your answers — what you said and how it was structured.
-          Delivery factors (clarity, pace, tone, body language) are <strong>not scored by this evaluator</strong>.
+          Delivery factors (clarity, pace, tone) are <strong>not scored by this evaluator</strong>.
         </p>
-        ${isCamera ? `
-          <div class="delivery-camera-note">
-            <strong>Camera mode note:</strong> Camera preview was for your self-awareness only.
-            No facial expressions, eye contact, or body language were analyzed, scored, or stored.
-            Voxora does not infer honesty, personality, or competence from camera footage.
-            Being nervous or having an accent does not affect your STAR scores.
-          </div>
-        ` : `
-          <div class="delivery-camera-note">
-            Voice-only mode: No visual delivery analysis was performed.
-            For future sessions, camera mode can help you self-assess your presentation,
-            but it will never be used to judge your personality or competence.
-          </div>
-        `}
       </div>
     `;
   },

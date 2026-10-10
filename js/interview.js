@@ -2,7 +2,7 @@
 // Voxora Interview Controller & Speech Engine
 // Handles: Session setup, question shuffling (no repeats),
 // random category selection (dice roll), speech recognition (STT),
-// text-to-speech (TTS), camera preview, and answer persistence.
+// text-to-speech (TTS), and answer persistence.
 // ============================================================
 
 const Interview = {
@@ -22,7 +22,6 @@ const Interview = {
     speechSupported: false,
     ttsSupported: false,
     micStream: null,
-    cameraStream: null,
     timerInterval: null,
     elapsedTime: 0,
     readyToProceed: false
@@ -89,7 +88,7 @@ const Interview = {
     // Update Session Info UI
     const modeLabel = document.getElementById('session-mode');
     if (modeLabel) {
-      modeLabel.textContent = App.state.interviewMode === 'camera' ? 'Voice + Camera' : 'Voice';
+      modeLabel.textContent = 'Voice';
     }
 
     const catLabel = document.getElementById('session-category');
@@ -117,7 +116,6 @@ const Interview = {
     this.stopSpeaking();
     this.stopRecording();
     this.stopMicStream();
-    this.stopCamera();
     this.stopTimer();
   },
 
@@ -351,27 +349,6 @@ const Interview = {
       status.classList.add('recording');
     } else {
       status.classList.remove('recording');
-    }
-  },
-
-  // ===== CAMERA PREVIEW =====
-  async startCamera() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-      this.state.cameraStream = stream;
-      const video = document.getElementById('camera-video');
-      if (video) video.srcObject = stream;
-      App.toast('Camera enabled', 'success');
-    } catch(err) {
-      App.toast('Camera unavailable. Voice interview still works.', 'error');
-    }
-  },
-
-  stopCamera() {
-    if (this.state.cameraStream) {
-      this.state.cameraStream.getTracks().forEach(t => t.stop());
-      this.state.cameraStream = null;
     }
   },
 
@@ -714,16 +691,44 @@ const Interview = {
     }
   },
 
-  finishInterview() {
+  async finishInterview() {
+    // Guard against double-calls (prevents duplicate session saves)
+    if (!this.state.active) return;
+
     this.stopSpeaking();
-    this.stopRecording();
+    this.stopRecording(); // speech recognition
     this.stopMicStream();
-    this.stopCamera();
     this.stopTimer();
     this.state.active = false;
 
     // Pass answers AND evaluations to feedback
     Feedback.render(this.state.answers, this.state.evaluations);
+
+    // Save completed session to history (localStorage)
+    const report = StarEvaluator.aggregateReport(
+      this.state.evaluations,
+      this.state.answers,
+      App.state.jdText || ''
+    );
+
+    let sessionId = null;
+    if (typeof History !== 'undefined') {
+      sessionId = History.saveSession(
+        this.state.answers,
+        this.state.evaluations,
+        report,
+        {
+          category: this.state.selectedCategory,
+          jobRole: App.state.jobRole,
+          experienceLevel: App.state.experienceLevel,
+          questionCount: this.state.questionCount,
+          mode: App.state.interviewMode,
+          elapsedTime: this.state.elapsedTime,
+          jdText: App.state.jdText || ''
+        }
+      );
+    }
+
     App.navigate('feedback');
   },
 
@@ -765,7 +770,6 @@ const Interview = {
   // ===== BIND CONTROLS =====
   bindControls() {
     const micBtn = document.getElementById('mic-btn');
-    const cameraStart = document.getElementById('camera-start-btn');
     const skipBtn = document.getElementById('skip-btn');
     const nextBtn = document.getElementById('next-btn');
     const endBtn = document.getElementById('end-interview-btn');
@@ -774,7 +778,7 @@ const Interview = {
     const followUpSkip = document.getElementById('followup-skip-btn');
 
     // Clone to remove old listeners
-    [micBtn, cameraStart, skipBtn, nextBtn, endBtn, readBtn, followUpSubmit, followUpSkip].forEach(btn => {
+    [micBtn, skipBtn, nextBtn, endBtn, readBtn, followUpSubmit, followUpSkip].forEach(btn => {
       if (!btn) return;
       const clone = btn.cloneNode(true);
       btn.parentNode.replaceChild(clone, btn);
@@ -782,7 +786,6 @@ const Interview = {
 
     // Re-bind
     document.getElementById('mic-btn').addEventListener('click', () => this.toggleRecording());
-    document.getElementById('camera-start-btn').addEventListener('click', () => this.startCamera());
     document.getElementById('skip-btn').addEventListener('click', () => this.skipQuestion());
     document.getElementById('next-btn').addEventListener('click', () => this.handleNextClick());
     document.getElementById('end-interview-btn').addEventListener('click', () => this.endInterview());

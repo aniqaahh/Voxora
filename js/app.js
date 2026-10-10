@@ -82,6 +82,18 @@ const App = {
       Interview.cleanup();
     }
 
+    // History & Progress views
+    if (view === 'history') {
+      if (typeof History !== 'undefined') History.renderHistory();
+    } else if (view === 'progress') {
+      if (typeof History !== 'undefined') History.renderProgress();
+    }
+
+    // Reset feedback view when navigating away from a historical session
+    if (view !== 'feedback' && typeof Feedback !== 'undefined' && Feedback.fromHistory) {
+      History.resetFeedbackView();
+    }
+
     // Bind practice view button when entering practice
     if (view === 'practice') {
       const reEvalBtn = document.getElementById('practice-reevaluate-btn');

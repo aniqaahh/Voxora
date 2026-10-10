@@ -465,7 +465,7 @@ async function handleEvaluateRequest(req, res) {
 }
 
 // ============================================================
-// GET /api/health — Check if Gemini API is configured
+// GET /api/health — Check if Gemini is configured
 // ============================================================
 function handleHealthCheck(req, res) {
   res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -511,15 +511,20 @@ const server = http.createServer((req, res) => {
       res.end('404 Not Found');
       return;
     }
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+    // Prevent browser from caching JS/CSS during development
+    if (ext === '.js' || ext === '.css' || ext === '.html') {
+      headers['Cache-Control'] = 'no-store, no-cache, must-revalidate';
+    }
+    res.writeHead(200, headers);
     res.end(data);
   });
 });
 
 server.listen(PORT, () => {
-  const status = GEMINI_API_KEY
+  const aiStatus = GEMINI_API_KEY
     ? `Gemini AI evaluation ENABLED (model: ${GEMINI_MODEL})`
     : 'Gemini AI evaluation DISABLED (set GEMINI_API_KEY to enable)';
   console.log(`Voxora prototype running at http://localhost:${PORT}`);
-  console.log(`  ${status}`);
+  console.log(`  ${aiStatus}`);
 });

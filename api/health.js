@@ -2,10 +2,10 @@
 // GET /api/health — Vercel Serverless Function
 // ============================================================
 // Checks whether the Gemini API key is configured (without
-// revealing the key itself). The frontend uses this to show
-// whether AI evaluation is available or fallback mode will be used.
+// revealing the secret). The frontend uses this to show
+// whether AI evaluation is available.
 //
-// Vercel reads GEMINI_API_KEY and GEMINI_MODEL from the project's
+// Vercel reads environment variables from the project's
 // Environment Variables (configured in the Vercel dashboard).
 // ============================================================
 
