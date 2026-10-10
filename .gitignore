@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment files — never commit secrets
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Local backup folders (not needed for deployment)
+backup_*/
+
+# Logs
+*.log
+npm-debug.log*
+
+# WorkBuddy internal data
+.workbuddy-ai/
+
+# Node runtime
+npm-shrinkwrap.json
+package-lock.json
