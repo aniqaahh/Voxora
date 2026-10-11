@@ -214,6 +214,7 @@
 
     <div class="setup-action">
       <button class="btn btn-primary btn-lg btn-full" id="start-interview-btn">Start Interview &rarr;</button>
+      <button class="btn btn-ghost btn-full calm-mode-btn" id="calm-mode-btn">Feeling nervous? Try Calm Mode</button>
       <p class="setup-note">Note: Interview questions are mock samples. STAR evaluation uses Google Gemini AI when configured (set GEMINI_API_KEY), with heuristic pattern matching as fallback.</p>
     </div>
   </div>
@@ -465,6 +466,49 @@
 <!-- ============ TOAST ============ -->
 <div class="toast" id="toast"></div>
 
+<!-- ============ CALM MODE BREATHING OVERLAY ============ -->
+<div class="calm-overlay" id="calm-overlay" style="display:none;">
+  <div class="calm-modal">
+    <button class="calm-close" id="calm-close-btn" aria-label="Close Calm Mode">&times;</button>
+
+    <div class="calm-breathing-view" id="calm-breathing-view">
+      <h2 class="calm-title">Calm Mode</h2>
+      <p class="calm-subtitle">Take a moment to breathe before you begin.</p>
+
+      <div class="calm-circle-container">
+        <div class="calm-circle" id="calm-circle">
+          <span class="calm-instruction" id="calm-instruction">Ready to begin</span>
+        </div>
+      </div>
+
+      <div class="calm-info">
+        <div class="calm-timer" id="calm-timer">1:00</div>
+        <div class="calm-progress-bar">
+          <div class="calm-progress-fill" id="calm-progress-fill"></div>
+        </div>
+      </div>
+
+      <div class="calm-controls">
+        <button class="btn btn-primary" id="calm-start-btn">Start</button>
+        <button class="btn btn-ghost" id="calm-pause-btn" style="display:none;">Pause</button>
+        <button class="btn btn-ghost" id="calm-skip-btn" style="display:none;">Skip</button>
+      </div>
+    </div>
+
+    <div class="calm-complete-view" id="calm-complete-view" style="display:none;">
+      <div class="calm-complete-icon">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="26" fill="rgba(99,102,241,0.12)" stroke="rgba(99,102,241,0.3)" stroke-width="1.5"/>
+          <path d="M18 28l7 7 13-13" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 class="calm-title">You're Ready</h2>
+      <p class="calm-complete-msg">Great job taking a moment for yourself. You've got this &mdash; go nail that interview!</p>
+      <button class="btn btn-primary btn-lg" id="calm-finish-btn">Start Interview &rarr;</button>
+    </div>
+  </div>
+</div>
+
 <!-- PDF.js (Mozilla) for client-side PDF text extraction — no npm dependency -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -476,6 +520,7 @@
 <script src="js/mock-data.js"></script>
 <script src="js/star-evaluator.js"></script>
 <script src="js/app.js"></script>
+<script src="js/calm-mode.js"></script>
 <script src="js/history.js"></script>
 <script src="js/interview.js"></script>
 <script src="js/feedback.js"></script>

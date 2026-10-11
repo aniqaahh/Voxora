@@ -20,6 +20,7 @@ const App = {
   init() {
     this.bindNav();
     this.bindSetup();
+    if (typeof CalmMode !== 'undefined') CalmMode.init();
     this.navigate('landing');
   },
 
@@ -54,6 +55,11 @@ const App = {
   },
 
   navigate(view) {
+    // Close Calm Mode overlay if open
+    if (typeof CalmMode !== 'undefined' && CalmMode.state.active) {
+      CalmMode.close();
+    }
+
     document.querySelectorAll('.view').forEach(v => v.classList.remove('view-active'));
     const target = document.getElementById('view-' + view);
     if (target) {

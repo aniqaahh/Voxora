@@ -1916,3 +1916,220 @@ textarea, input { font-family: inherit; outline: none; }
   .history-card { padding: 14px; }
   .progress-stat-num { font-size: 28px; }
 }
+
+/* ============ CALM MODE ============ */
+.calm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(10, 11, 20, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.calm-modal {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.calm-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-mute);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.calm-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.calm-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.calm-subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+/* Breathing circle */
+.calm-circle-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 240px;
+  margin-bottom: 28px;
+}
+
+.calm-circle {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.14), rgba(139, 92, 246, 0.05));
+  border: 2px solid rgba(99, 102, 241, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0.55);
+  will-change: transform;
+}
+
+.calm-circle-idle {
+  transform: scale(0.55);
+}
+
+.calm-circle-inhale {
+  animation: calm-inhale 4s ease-in-out forwards;
+}
+@keyframes calm-inhale {
+  from { transform: scale(0.55); }
+  to   { transform: scale(1); }
+}
+
+.calm-circle-exhale {
+  animation: calm-exhale 6s ease-in-out forwards;
+}
+@keyframes calm-exhale {
+  from { transform: scale(1); }
+  to   { transform: scale(0.55); }
+}
+
+/* Paused state — freezes running animation */
+.calm-paused {
+  animation-play-state: paused !important;
+}
+
+/* Reduced motion: gentle opacity pulse instead of scale */
+.calm-circle-static {
+  transform: scale(0.8);
+  animation: calm-gentle-pulse 4s ease-in-out infinite;
+}
+@keyframes calm-gentle-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.85; }
+}
+
+.calm-instruction {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+/* Timer & progress */
+.calm-info {
+  margin-bottom: 24px;
+}
+
+.calm-timer {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calm-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.calm-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+/* Controls */
+.calm-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Completion view */
+.calm-complete-view {
+  text-align: center;
+}
+.calm-complete-icon {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+.calm-complete-msg {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin: 0 auto 28px;
+  max-width: 340px;
+}
+
+/* Calm Mode button on setup page */
+.calm-mode-btn {
+  margin-top: 12px;
+  color: var(--accent);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.calm-mode-btn:hover {
+  background: var(--accent-light);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Reduced motion: disable circle animations */
+@media (prefers-reduced-motion: reduce) {
+  .calm-circle-inhale,
+  .calm-circle-exhale {
+    animation: none;
+  }
+  .calm-progress-fill {
+    transition: none;
+  }
+}
+
+/* Calm Mode responsive */
+@media (max-width: 480px) {
+  .calm-modal {
+    padding: 36px 24px;
+  }
+  .calm-circle-container {
+    height: 200px;
+  }
+  .calm-circle {
+    width: 160px;
+    height: 160px;
+  }
+  .calm-timer {
+    font-size: 28px;
+  }
+}
