@@ -1,5 +1,5 @@
 # Voxora
-
+Presentation slide : https://drive.google.com/file/d/1q87f3YuTBgox8zSjy_Syxnr_LrI3PBHQ/view?usp=sharing 
 **Practise interviews. Get AI feedback. Land the offer.**
 
 ---
